@@ -252,6 +252,7 @@ class Product:
             fechaIngreso = self.tabla.item(self.tabla.selection())['values'][2]
             fechaVencimiento = self.tabla.item(self.tabla.selection())['values'][3]
             description = self.tabla.item(self.tabla.selection())['values'][5]
+            id = self.tabla.item(self.tabla.selection())['values'][6]
             
             self.EditProduct = Toplevel()
             self.EditProduct.config(bg='SteelBlue2')
@@ -281,13 +282,13 @@ class Product:
             self.newDescription = Entry(self.EditProduct, width=50 ,textvariable=StringVar(self.EditProduct, value=description))
             self.newDescription.grid(column=1, row=9, columnspan=1, padx=20, pady=20, ipadx=10, ipady=5)
             
-            Button(self.EditProduct, text='Actualizar', width=20, command= lambda : self.actualizar_producto(name, self.newName.get().upper().strip(),self.newPrice.get().upper().strip(), self.newCount.get().upper().strip(), self.newDateadmission.get().upper().strip(), self.newDateexpiration.get().upper().strip(), self.newDescription.get().upper().strip()), bg='SteelBlue3').grid(column=0, row=10, columnspan=6, ipadx=5, ipady=5, pady=10)
+            Button(self.EditProduct, text='Actualizar', width=20, command= lambda : self.actualizar_producto(name, id, self.newName.get().upper().strip(),self.newPrice.get().upper().strip(), self.newCount.get().upper().strip(), self.newDateadmission.get().upper().strip(), self.newDateexpiration.get().upper().strip(), self.newDescription.get().upper().strip()), bg='SteelBlue3').grid(column=0, row=10, columnspan=6, ipadx=5, ipady=5, pady=10)
 
-        def actualizar_producto(self, name, newname, newprice, newcount, newadmission, newexpiration, newdescripcion):
+        def actualizar_producto(self, name, id, newname, newprice, newcount, newadmission, newexpiration, newdescripcion):
             if len(self.newName.get()) != 0 and len(self.newPrice.get()) != 0 and len(self.newCount.get()) != 0:
                 total = float(newcount) * int(newprice)
-                query = 'UPDATE productos SET Nombre = ?, Cantidad = ?, Precio = ?, Ingreso = ?, Vencimiento = ?, Detalles = ?, Total = ? WHERE Nombre = ?'
-                parametros = (newname, newcount, newprice, newadmission, newexpiration, newdescripcion, total, name)
+                query = 'UPDATE productos SET Nombre = ?, Cantidad = ?, Precio = ?, Ingreso = ?, Vencimiento = ?, Detalles = ?, Total = ? WHERE Nombre = ? AND Id = ?'
+                parametros = (newname, newcount, newprice, newadmission, newexpiration, newdescripcion, total, name, id)
                 self.run_query(query, parametros)
                 self.EditProduct.destroy()
                 self.get_products()
@@ -580,7 +581,7 @@ class Product:
             wind.config(bg='SteelBlue2')
 
             ANCHO = 1200
-            ALTO = 630
+            ALTO = 730
             POSY = 20
             POSX = 100
 
@@ -624,6 +625,10 @@ class Product:
             cantidadgastados = Entry(wind, width=30)
             cantidadgastados.grid(column=2, row=3, ipadx=10, ipady=5, pady=20)
 
+            Label(wind, text='Id producto', bg='SteelBlue2').grid(row=4, column=1)
+            id_producto = Entry(wind, width=30)
+            id_producto.grid(column=1, row=5, ipadx=10, ipady=5)
+
             def validation():
                 return len(insumosgastados.get()) != 0 and len(cantidadgastados.get()) != 0
 
@@ -641,13 +646,13 @@ class Product:
                 return formatted_num
 
             def add_product():
-                query_2 = 'SELECT Cantidad FROM Productos WHERE Nombre = ?'
-                consultaCant = run_query(query_2, (insumosgastados.get().upper(), ))
+                query_2 = 'SELECT Cantidad FROM Productos WHERE Nombre = ? AND Id = ?'
+                consultaCant = run_query(query_2, (insumosgastados.get().upper(), id_producto.get() ))
                 for alert in consultaCant:
                     res = float(''.join(map(str, alert)))
                     if(insumosgastados.get().upper() == 'MANO DE OBRA'):
-                            query_precio = 'SELECT Precio FROM Productos WHERE Nombre = ?'
-                            consultaPrice = run_query(query_precio, (insumosgastados.get()))
+                            query_precio = 'SELECT Precio FROM Productos WHERE Nombre = ? AND Id = ?'
+                            consultaPrice = run_query(query_precio, (insumosgastados.get(), id_producto.get()))
                             precio = 0
                             for price in consultaPrice:
                                 res = int(''.join(map(str, price)))
@@ -661,8 +666,8 @@ class Product:
                     else:
                         condicion =  res - float(cantidadgastados.get())
                         if(condicion >= 0):
-                            query_precio = 'SELECT Precio FROM Productos WHERE Nombre = ?'
-                            consultaPrice = run_query(query_precio, (insumosgastados.get(), ))
+                            query_precio = 'SELECT Precio FROM Productos WHERE Nombre = ? AND Id = ?'
+                            consultaPrice = run_query(query_precio, (insumosgastados.get(), id_producto.get()))
                             precio = 0
                             for price in consultaPrice:
                                 res = int(''.join(map(str, price)))
@@ -672,25 +677,25 @@ class Product:
                                 query = 'INSERT INTO verproducto VALUES(NULL, ?, ?, ?, ?, ?, ?)'
                                 parameters = (insumosgastados.get().upper(), precio, cantidadgastados.get().upper(), gasto, name, id)
                                 run_query(query, parameters)
-                                query_2 = 'SELECT Cantidad FROM Productos WHERE Nombre = ?'
-                                consultaCant = run_query(query_2, (insumosgastados.get().upper(), ))
+                                query_2 = 'SELECT Cantidad FROM Productos WHERE Nombre = ? AND Id = ?'
+                                consultaCant = run_query(query_2, (insumosgastados.get().upper(), id_producto.get()))
                                 for cant in consultaCant:
                                     res = float(''.join(map(str, cant)))
                                     NuevaCant = res - float(cantidadgastados.get().upper()) * cantidad_producto
-                                    query_update = 'UPDATE Productos SET Cantidad = ? WHERE Nombre = ?'
-                                    parametrso = (NuevaCant, insumosgastados.get().upper(), )
+                                    query_update = 'UPDATE Productos SET Cantidad = ? WHERE Nombre = ? AND Id = ?'
+                                    parametrso = (NuevaCant, insumosgastados.get().upper(), id_producto.get())
                                     run_query(query_update, parametrso)
-                                query_total_insumos = 'SELECT Cantidad FROM Productos WHERE Nombre = ?'
-                                query_total_insumos_2 = 'SELECT Precio FROM Productos WHERE Nombre = ?'
-                                cantidad_inusmo = run_query(query_total_insumos, (insumosgastados.get(), ))
-                                precio_insumo = run_query(query_total_insumos_2, (insumosgastados.get(), ))
+                                query_total_insumos = 'SELECT Cantidad FROM Productos WHERE Nombre = ? AND Id = ?'
+                                query_total_insumos_2 = 'SELECT Precio FROM Productos WHERE Nombre = ? AND Id = ?'
+                                cantidad_inusmo = run_query(query_total_insumos, (insumosgastados.get(), id_producto.get()))
+                                precio_insumo = run_query(query_total_insumos_2, (insumosgastados.get(), id_producto.get()))
                                 for Cant in cantidad_inusmo:
                                     resCant = float(''.join(map(str, Cant)))
                                     for Price in precio_insumo:
                                         resPrice = int(''.join(map(str, Price)))
                                         total = resCant * resPrice
-                                        query_actualizar_total = 'UPDATE Productos SET Total = ? WHERE Nombre = ?'
-                                        run_query(query_actualizar_total, (total, insumosgastados.get(), ))
+                                        query_actualizar_total = 'UPDATE Productos SET Total = ? WHERE Nombre = ? AND Id = ?'
+                                        run_query(query_actualizar_total, (total, insumosgastados.get(), id_producto.get()))
                                 insumosgastados.delete(0, END)
                                 cantidadgastados.delete(0, END)
                                 Gastottotal()
@@ -700,13 +705,13 @@ class Product:
                     if(res <= 5):
                         messagebox.showinfo(message='El producto ' + insumosgastados.get().upper() + ' se esta agotando, UNIDADES DISPONIBLES ' + str(res), title='Agotamiento de producto')
 
-            Button(wind, text='Registrar', width=30, height=2, command=add_product, bg='SteelBlue3').grid(column=1, row=4)
+            Button(wind, text='Registrar', width=30, height=2, command=add_product, bg='SteelBlue3').grid(column=1, row=6, pady=20)
 
-            Label(wind, text='Insumos gastados', font=('Segoe UI',20), bg='SteelBlue2').grid(row=5, column=0, pady=10)
+            Label(wind, text='Insumos gastados', font=('Segoe UI',20), bg='SteelBlue2').grid(row=7, column=0, pady=10)
 
             tabla_product = ttk.Treeview(wind, columns=('price','date','Mount', 'id', 'product'))
             tabla_product.config()
-            tabla_product.grid(row=6, column=0, columnspan=3, pady=20)
+            tabla_product.grid(row=8, column=0, columnspan=3, pady=20)
             tabla_product.heading('#0', text='Insumos Gastados')
             tabla_product.heading('#1', text='Precio de insumos')
             tabla_product.heading('#2', text='Cantidad de insumos')
@@ -715,7 +720,7 @@ class Product:
             tabla_product.heading('#5', text='Id producto')
 
             scrooll_ver = ttk.Scrollbar(wind, orient="vertical", command=self.tabla.yview)
-            scrooll_ver.grid(row=6, column=3, sticky='nsw')
+            scrooll_ver.grid(row=8, column=3, sticky='nsw')
             self.tabla.configure(yscrollcommand=scrooll_ver.set)
             
             def get_products():
@@ -771,9 +776,9 @@ class Product:
                     run_query(query, (id_product, ))
                     get_products()
 
-            Button(wind, text='Eliminar', width=30, height=2, command=delete_products, bg='SteelBlue3').grid(row=7, column=1, pady=20)
+            Button(wind, text='Eliminar', width=30, height=2, command=delete_products, bg='SteelBlue3').grid(row=9, column=1, pady=20)
 
-            Entry(wind, textvariable=IntVar(wind, Gastottotal()), width=20, font=1, justify='center').grid(row=7, column=2, ipady='10')
+            Entry(wind, textvariable=IntVar(wind, Gastottotal()), width=20, font=1, justify='center').grid(row=9, column=2, ipady='10')
             
             get_products()
 
