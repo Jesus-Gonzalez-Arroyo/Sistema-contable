@@ -792,7 +792,7 @@ class Product:
             self.top_level.config(width=650, height=580, bg='SteelBlue2')
             self.top_level.resizable(0,0)
 
-            ANCHO = 1220
+            ANCHO = 1420
             ALTO = 720
             POSY = 10
             POSX = 170
@@ -840,7 +840,7 @@ class Product:
 
             Label(self.top_level, text='Tus maquinas', font=('Segoe UI', 20), bg='SteelBlue2').grid(row= 10, column=0, pady=(0, 10))
 
-            self.tabla = ttk.Treeview(self.top_level, columns=('price', 'state', 'mount', 'description', 'total'))
+            self.tabla = ttk.Treeview(self.top_level, columns=('price', 'state', 'mount', 'description', 'total', 'id'))
             self.tabla.grid(row=14, column=0, columnspan=3, pady=20)
             self.tabla.heading('#0', text='Nombre')
             self.tabla.heading('#1', text='Precio')
@@ -848,6 +848,7 @@ class Product:
             self.tabla.heading('#3', text='Estado')
             self.tabla.heading('#4', text='Total')
             self.tabla.heading('#5', text='Detalles')
+            self.tabla.heading('#6', text='Id')
 
             scrooll_ver = ttk.Scrollbar(self.top_level, orient="vertical", command=self.tabla.yview)
             scrooll_ver.grid(row=14, column=3, sticky='nsw')
@@ -918,7 +919,7 @@ class Product:
             query = 'SELECT * FROM Maquinas ORDER BY Nombre DESC'
             db_results = self.run_query(query)
             for row in db_results:
-                self.tabla.insert('', 0,text= row[0], values=(row[1], row[3], row[2], row[5], row[4]))
+                self.tabla.insert('', 0,text= row[0], values=(row[1], row[3], row[2], row[5], row[4], row[6]))
         
         def validation(self):
             return len(self.name.get()) != 0 and len(self.precio.get()) != 0 and len(self.cantidad.get()) != 0
@@ -926,7 +927,7 @@ class Product:
         def add_product(self):
             if self.validation():
                 total = int(self.cantidad.get()) * int(self.precio.get())
-                query = 'INSERT INTO maquinas VALUES(?, ?, ?, ?, ?, ?)'
+                query = 'INSERT INTO maquinas VALUES(?, ?, ?, ?, ?, ?, NULL)'
                 parameters = (self.name.get().upper().strip(), self.precio.get().upper().strip(), self.estado.get().upper().strip(), self.cantidad.get().upper().strip(), self.description.get().upper().strip(), total)
                 self.run_query(query, parameters)
                 self.name.delete(0, END)
@@ -944,12 +945,9 @@ class Product:
                 self.tabla.item(self.tabla.selection())['text'][0]
             except IndexError:
                 messagebox.showerror(message='Selecciona un producto para eliminar')
-            nombre = self.tabla.item(self.tabla.selection())['text']
-            precio = self.tabla.item(self.tabla.selection())['values'][0]
-            descripcion = self.tabla.item(self.tabla.selection())['values'][4]
-            total = self.tabla.item(self.tabla.selection())['values'][3]
-            query = 'DELETE FROM Maquinas WHERE Nombre = ? AND Descripcion = ? AND Precio = ? AND Total = ?'
-            self.run_query(query, (nombre, descripcion, precio, total))
+            id = self.tabla.item(self.tabla.selection())['values'][5]
+            query = 'DELETE FROM Maquinas WHERE Id = ?'
+            self.run_query(query, (id,))
             self.get_products()
 
         def Ventana_Actulizar(self):
@@ -964,6 +962,7 @@ class Product:
             cantidad = self.tabla.item(self.tabla.selection())['values'][1]
             estado = self.tabla.item(self.tabla.selection())['values'][2]
             description = self.tabla.item(self.tabla.selection())['values'][4]
+            Idproduct = self.tabla.item(self.tabla.selection())['values'][5]
             
             self.EditProduct = Toplevel()
             self.EditProduct.config(bg='SteelBlue2')
@@ -989,16 +988,17 @@ class Product:
             self.newDescription = Entry(self.EditProduct, width=50 ,textvariable=StringVar(self.EditProduct, value=description))
             self.newDescription.grid(column=0, row=7, columnspan=2, padx=20, pady=20, ipadx=10, ipady=5)
 
-            Button(self.EditProduct, text='Actualizar', width=20, command= lambda : self.actualizar_producto(id, self.newName.get().upper(),self.newPrice.get().upper(), self.newCount.get().upper(), self.newState.get().upper(), self.newDescription.get().upper()), bg='SteelBlue3').grid(column=0, row=8, columnspan=2, ipadx=5, ipady=5, pady=10)
+            Button(self.EditProduct, text='Actualizar', width=20, command= lambda : self.actualizar_producto(Idproduct, self.newName.get().upper().strip(), self.newPrice.get().upper().strip(), self.newCount.get().upper().strip(), self.newState.get().upper().strip(), self.newDescription.get().upper().strip()), bg='SteelBlue3').grid(column=0, row=8, columnspan=2, ipadx=5, ipady=5, pady=10)
 
-        def actualizar_producto(self, newname, newprice, newcount, newstate, newdescripcion, id):
+        def actualizar_producto(self, Idproduct, newprice, newcount, newstate, newdescripcion, id):
             if len(self.newName.get()) != 0 and len(self.newPrice.get()) != 0 and len(self.newCount.get()) != 0 and len(self.newState.get()) != 0:
-                """ print(id, newprice, newstate, newcount, newdescripcion) """
+                print(newprice, newcount, id)
                 Total_maq = int(newstate) * int(newcount)
-                query = 'UPDATE maquinas SET Nombre = ?, Precio = ?, Estado = ?, Cantidad = ?, Descripcion = ?, Total = ? WHERE Nombre = ? AND Precio = ? AND Descripcion = ?'
-                parametros = (newprice, newcount, newdescripcion, newstate, id, Total_maq, newprice, newcount, id)
+                query = 'UPDATE maquinas SET Nombre = ?, Precio = ?, Estado = ?, Cantidad = ?, Descripcion = ?, Total = ? WHERE Id = ?'
+                parametros = (newprice, newcount, newdescripcion, newstate, id, Total_maq, Idproduct)
                 self.run_query(query, parametros)
                 self.EditProduct.destroy()
+                
                 self.get_products()
             else:
                 messagebox.showerror(title='error', message='No se pueden enviar valores vacios')
